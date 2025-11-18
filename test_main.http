@@ -1,0 +1,315 @@
+### 🏠 TEST ROOT ENDPOINT
+GET http://localhost:8000/
+Accept: application/json
+
+### 🔐 AUTHENTICATION ENDPOINTS
+
+### 1. Registrar nuevo usuario
+POST http://localhost:8000/auth/register
+Content-Type: application/json
+
+{
+  "username": "juanperez",
+  "email": "juan.perez@example.com",
+  "full_name": "Juan Pérez",
+  "password": "password123"
+}
+
+### 2. Login de usuario
+POST http://localhost:8000/auth/login
+Content-Type: application/json
+
+{
+  "username": "juanperez",
+  "password": "password123"
+}
+
+### 3. Registrar segundo usuario
+POST http://localhost:8000/auth/register
+Content-Type: application/json
+
+{
+  "username": "mariagarcia",
+  "email": "maria.garcia@example.com",
+  "full_name": "María García",
+  "password": "password456"
+}
+
+### 4. Autenticación social
+POST http://localhost:8000/auth/social-auth
+Content-Type: application/json
+
+{
+  "provider": "google",
+  "provider_id": "google_123456",
+  "email": "social.user@example.com",
+  "full_name": "Social User"
+}
+
+### 📅 EVENT ENDPOINTS - CREAR
+
+### 5. Crear evento 1
+POST http://localhost:8000/events/
+Content-Type: application/json
+
+{
+  "title": "Conferencia de Tecnología 2024",
+  "description": "Evento anual sobre las últimas tendencias en tecnología",
+  "date": "2024-12-15T10:00:00",
+  "location": "Centro de Convenciones",
+  "max_participants": 200,
+  "organizer_id": 1
+}
+
+### 6. Crear evento 2
+POST http://localhost:8000/events/
+Content-Type: application/json
+
+{
+  "title": "Taller de Python Avanzado",
+  "description": "Taller práctico sobre técnicas avanzadas de Python",
+  "date": "2024-11-20T14:00:00",
+  "location": "Aula Magna Universidad",
+  "max_participants": 50,
+  "organizer_id": 1
+}
+
+### 7. Crear evento pasado
+POST http://localhost:8000/events/
+Content-Type: application/json
+
+{
+  "title": "Meetup Desarrollo Web",
+  "description": "Meetup sobre desarrollo web que ya ocurrió",
+  "date": "2024-01-15T18:00:00",
+  "location": "Coworking Space",
+  "max_participants": 30,
+  "organizer_id": 1
+}
+
+### 📅 EVENT ENDPOINTS - LEER
+
+### 8. Obtener todos los eventos próximos
+GET http://localhost:8000/events/upcoming
+Accept: application/json
+
+### 9. Obtener todos los eventos pasados
+GET http://localhost:8000/events/past
+Accept: application/json
+
+### 10. Obtener evento específico por ID (cambia el ID según lo que devuelva la creación)
+GET http://localhost:8000/events/1
+Accept: application/json
+
+### 11. Obtener evento específico por ID 2
+GET http://localhost:8000/events/2
+Accept: application/json
+
+### 📅 EVENT ENDPOINTS - ACTUALIZAR
+
+### 12. Actualizar evento 1
+PUT http://localhost:8000/events/1
+Content-Type: application/json
+
+{
+  "title": "Conferencia de Tecnología 2024 - ACTUALIZADO",
+  "description": "Evento anual sobre las últimas tendencias en tecnología - ¡Nuevos ponentes!",
+  "max_participants": 250
+}
+
+### 13. Actualizar evento 2
+PUT http://localhost:8000/events/2
+Content-Type: application/json
+
+{
+  "title": "Taller de Python Avanzado - EDICIÓN ESPECIAL",
+  "location": "Nuevo Edificio Tecnológico"
+}
+
+### 📅 EVENT ENDPOINTS - ELIMINAR
+
+### 14. Eliminar evento 2 (soft delete)
+DELETE http://localhost:8000/events/2
+
+### 📅 EVENT ENDPOINTS - ASISTENCIA
+
+### 15. Registrar asistencia usuario 1 al evento 1
+POST http://localhost:8000/events/attend
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "event_id": 1
+}
+
+### 16. Registrar asistencia usuario 2 al evento 1
+POST http://localhost:8000/events/attend
+Content-Type: application/json
+
+{
+  "user_id": 2,
+  "event_id": 1
+}
+
+### 17. Obtener asistentes del evento 1
+GET http://localhost:8000/events/1/attendees
+Accept: application/json
+
+### 💬 SOCIAL ENDPOINTS - COMENTARIOS
+
+### 18. Agregar comentario al evento 1
+POST http://localhost:8000/social/comments
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "event_id": 1,
+  "content": "Excelente evento, muy bien organizado y contenido de calidad",
+  "rating": 5
+}
+
+### 19. Agregar segundo comentario al evento 1
+POST http://localhost:8000/social/comments
+Content-Type: application/json
+
+{
+  "user_id": 2,
+  "event_id": 1,
+  "content": "Buen evento, me gustaría más tiempo para networking",
+  "rating": 4
+}
+
+### 20. Obtener todos los comentarios del evento 1
+GET http://localhost:8000/social/events/1/comments
+Accept: application/json
+
+### 💬 SOCIAL ENDPOINTS - COMPARTIR
+
+### 21. Compartir evento por redes sociales
+POST http://localhost:8000/social/share
+Content-Type: application/json
+
+{
+  "event_id": 1,
+  "share_type": "social_media",
+  "recipient": null
+}
+
+### 22. Compartir evento por email
+POST http://localhost:8000/social/share
+Content-Type: application/json
+
+{
+  "event_id": 1,
+  "share_type": "email",
+  "recipient": "amigo@example.com"
+}
+
+### 📊 STATISTICS ENDPOINTS
+
+### 23. Obtener estadísticas del usuario 1
+GET http://localhost:8000/stats/user/1
+Accept: application/json
+
+### 24. Obtener estadísticas del usuario 2
+GET http://localhost:8000/stats/user/2
+Accept: application/json
+
+### 25. Obtener estadísticas del evento 1
+GET http://localhost:8000/stats/event/1
+Accept: application/json
+
+### 🔄 FLUJO COMPLETO - NUEVO USUARIO Y EVENTO
+
+### 26. Registrar usuario para flujo completo
+POST http://localhost:8000/auth/register
+Content-Type: application/json
+
+{
+  "username": "carloslopez",
+  "email": "carlos.lopez@example.com",
+  "full_name": "Carlos López",
+  "password": "password789"
+}
+
+### 27. Crear evento con nuevo usuario
+POST http://localhost:8000/events/
+Content-Type: application/json
+
+{
+  "title": "Workshop de Machine Learning",
+  "description": "Taller práctico introductorio a Machine Learning",
+  "date": "2024-12-10T09:00:00",
+  "location": "Laboratorio de Computación",
+  "max_participants": 25,
+  "organizer_id": 3
+}
+
+### 28. Usuario 1 se registra al nuevo evento
+POST http://localhost:8000/events/attend
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "event_id": 3
+}
+
+### 29. Agregar comentario al nuevo evento
+POST http://localhost:8000/social/comments
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "event_id": 3,
+  "content": "Muy interesante el workshop, espero que se repita pronto",
+  "rating": 5
+}
+
+### 30. Ver estadísticas del nuevo evento
+GET http://localhost:8000/stats/event/3
+Accept: application/json
+
+### ❌ TEST DE ERRORES
+
+### 31. Intentar registrar usuario con username existente
+POST http://localhost:8000/auth/register
+Content-Type: application/json
+
+{
+  "username": "juanperez",
+  "email": "otro.email@example.com",
+  "full_name": "Otro Usuario",
+  "password": "password123"
+}
+
+### 32. Intentar login con credenciales incorrectas
+POST http://localhost:8000/auth/login
+Content-Type: application/json
+
+{
+  "username": "juanperez",
+  "password": "password_incorrecto"
+}
+
+### 33. Intentar obtener evento que no existe
+GET http://localhost:8000/events/9999
+Accept: application/json
+
+### 34. Intentar crear comentario con rating inválido
+POST http://localhost:8000/social/comments
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "event_id": 1,
+  "content": "Comentario con rating inválido",
+  "rating": 6
+}
+
+### 35. Verificar que el evento eliminado no aparece
+GET http://localhost:8000/events/upcoming
+Accept: application/json
+
+### 36. Obtener estadísticas de usuario que no existe
+GET http://localhost:8000/stats/user/9999
+Accept: application/json
