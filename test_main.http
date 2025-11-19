@@ -313,3 +313,36 @@ Accept: application/json
 ### 36. Obtener estadísticas de usuario que no existe
 GET http://localhost:8000/stats/user/9999
 Accept: application/json
+
+### 🔐 OAUTH REAL ENDPOINTS
+
+### 37. OAuth con Google (CORREGIDO)
+POST http://localhost:8000/oauth/google
+Content-Type: application/json
+
+{
+  "access_token": "your-google-access-token-here",
+  "role": "participant",
+  "platform": "web"
+}
+### 38. OAuth con Facebook
+POST http://localhost:8000/oauth/facebook
+Content-Type: application/json
+
+{
+  "access_token": "your-facebook-access-token-here",
+  "role": "organizer"
+}
+
+### 39. Registrar usuario como organizador
+POST http://localhost:8000/auth/register
+Content-Type: application/json
+
+{
+  "username": "organizador1",
+  "email": "organizador@example.com",
+  "full_name": "Organizador Principal",
+  "password": "password123",
+  "role": "organizer"
+}
+
