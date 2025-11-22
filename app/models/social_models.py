@@ -55,3 +55,12 @@ class ShareEventResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class NotificationResponse(BaseModel):
+    event_id: int
+    event_title: str
+    event_date: datetime
+    event_location: str
+    notification_type: str
+    message: str
+    days_until_event: Optional[int] = None

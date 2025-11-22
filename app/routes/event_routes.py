@@ -74,15 +74,67 @@ async def get_event(event_id: int, db: mysql.connector.MySQLConnection = Depends
 async def update_event(event_id: int, event_update: EventUpdate, db: mysql.connector.MySQLConnection = Depends(get_db)):
     cursor = db.cursor(dictionary=True)
 
-    cursor.callproc("UpdateEvent", (
-        event_id, event_update.title, event_update.description,
-        event_update.date, event_update.location, event_update.max_participants
-    ))
+    try:
+        # Obtener evento original para detectar cambios
+        cursor.callproc("GetEventById", (event_id,))
+        original_event = None
+        for result in cursor.stored_results():
+            original_event = result.fetchone()
 
-    db.commit()
-    cursor.close()
-    return {"message": "Event updated successfully"}
+        if not original_event:
+            raise HTTPException(status_code=404, detail="Event not found")
 
+        # Detectar cambios importantes
+        changes_detected = {
+            "date_changed": False,
+            "location_changed": False,
+            "changes": []
+        }
+
+        if event_update.date and event_update.date != original_event['date']:
+            changes_detected["date_changed"] = True
+            changes_detected["changes"].append(f"Fecha: {original_event['date']} → {event_update.date}")
+
+        if event_update.location and event_update.location != original_event['location']:
+            changes_detected["location_changed"] = True
+            changes_detected["changes"].append(f"Ubicación: {original_event['location']} → {event_update.location}")
+
+        # Actualizar evento
+        cursor.callproc("UpdateEvent", (
+            event_id, event_update.title, event_update.description,
+            event_update.date, event_update.location, event_update.max_participants
+        ))
+
+        db.commit()
+
+        # Si hubo cambios, obtener lista de usuarios afectados
+        affected_users = []
+        if changes_detected["date_changed"] or changes_detected["location_changed"]:
+            cursor.callproc("GetEventAttendees", (event_id,))
+            for result in cursor.stored_results():
+                attendees = result.fetchall()
+                affected_users = [{"user_id": a["id"], "username": a["username"], "email": a.get("email")} for a in attendees]
+
+        cursor.close()
+
+        response = {
+            "message": "Event updated successfully",
+            "changes_detected": len(changes_detected["changes"]) > 0,
+            "details": changes_detected["changes"]
+        }
+
+        if affected_users:
+            response["affected_users_count"] = len(affected_users)
+            response["notification_message"] = f"IMPORTANTE: El evento '{original_event['title']}' ha sido modificado. Cambios: {'; '.join(changes_detected['changes'])}"
+
+        return response
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
 
 @router.delete("/{event_id}")
 async def delete_event(event_id: int, db: mysql.connector.MySQLConnection = Depends(get_db)):

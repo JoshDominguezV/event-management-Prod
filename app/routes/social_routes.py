@@ -201,3 +201,126 @@ async def delete_event_share(share_id: int, db: mysql.connector.MySQLConnection 
     db.commit()
     cursor.close()
     return {"message": "Share deleted successfully"}
+
+
+# ============== NOTIFICACIONES (EN TIEMPO REAL) ==============
+
+@router.get("/notifications/user/{user_id}")
+async def get_user_notifications(user_id: int, db: mysql.connector.MySQLConnection = Depends(get_db)):
+    """
+    Obtiene notificaciones para un usuario:
+    - Recordatorios de eventos próximos (24 horas antes)
+    - Eventos a los que está inscrito
+    """
+    cursor = db.cursor(dictionary=True)
+
+    try:
+        from datetime import datetime, timedelta
+
+        # Obtener eventos del usuario (asistencias)
+        cursor.execute("""
+            SELECT e.*, ea.registered_at
+            FROM event_attendance ea
+            JOIN events e ON ea.event_id = e.id
+            WHERE ea.user_id = %s AND e.is_active = TRUE AND e.date >= NOW()
+            ORDER BY e.date ASC
+        """, (user_id,))
+
+        user_events = cursor.fetchall()
+        notifications = []
+
+        for event in user_events:
+            event_date = event['date']
+            now = datetime.now()
+
+            # Calcular días hasta el evento
+            time_until_event = event_date - now
+            days_until = time_until_event.days
+            hours_until = time_until_event.total_seconds() / 3600
+
+            # Notificación de recordatorio (24 horas antes)
+            if 0 <= hours_until <= 24:
+                notifications.append({
+                    "event_id": event['id'],
+                    "event_title": event['title'],
+                    "event_date": event['date'],
+                    "event_location": event['location'],
+                    "notification_type": "reminder",
+                    "message": f"¡Recordatorio! El evento '{event['title']}' es mañana a las {event['date'].strftime('%H:%M')} en {event['location']}",
+                    "days_until_event": 0 if hours_until < 24 else 1
+                })
+
+            # Información general del evento próximo
+            elif days_until > 0:
+                notifications.append({
+                    "event_id": event['id'],
+                    "event_title": event['title'],
+                    "event_date": event['date'],
+                    "event_location": event['location'],
+                    "notification_type": "upcoming",
+                    "message": f"Tienes confirmada tu asistencia al evento '{event['title']}' el {event['date'].strftime('%d/%m/%Y')}",
+                    "days_until_event": days_until
+                })
+
+        cursor.close()
+        return {
+            "user_id": user_id,
+            "total_notifications": len(notifications),
+            "notifications": notifications
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@router.get("/notifications/reminders")
+async def get_event_reminders(db: mysql.connector.MySQLConnection = Depends(get_db)):
+    """
+    Obtiene todos los eventos que requieren recordatorio (próximas 24 horas)
+    Útil para sistema de notificaciones automático
+    """
+    cursor = db.cursor(dictionary=True)
+
+    try:
+        from datetime import datetime, timedelta
+
+        cursor.execute("""
+            SELECT e.*, u.username, u.email, u.full_name, ea.user_id
+            FROM events e
+            JOIN event_attendance ea ON e.id = ea.event_id
+            JOIN users u ON ea.user_id = u.id
+            WHERE e.is_active = TRUE 
+            AND e.date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 24 HOUR)
+            ORDER BY e.date ASC
+        """)
+
+        reminders = cursor.fetchall()
+
+        # Agrupar por evento
+        events_with_attendees = {}
+        for reminder in reminders:
+            event_id = reminder['id']
+            if event_id not in events_with_attendees:
+                events_with_attendees[event_id] = {
+                    "event_id": event_id,
+                    "event_title": reminder['title'],
+                    "event_date": reminder['date'],
+                    "event_location": reminder['location'],
+                    "attendees": []
+                }
+
+            events_with_attendees[event_id]["attendees"].append({
+                "user_id": reminder['user_id'],
+                "username": reminder['username'],
+                "email": reminder['email'],
+                "full_name": reminder['full_name']
+            })
+
+        cursor.close()
+        return {
+            "total_events": len(events_with_attendees),
+            "events_needing_reminders": list(events_with_attendees.values())
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

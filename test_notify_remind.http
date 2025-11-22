@@ -1,0 +1,367 @@
+### Obtener notificaciones de un usuario
+GET http://localhost:8000/social/notifications/user/2
+Accept: application/json
+
+### Obtener eventos que necesitan recordatorio
+GET http://localhost:8000/social/notifications/reminders
+Accept: application/json
+
+### Actualizar evento y ver notificación de cambio
+PUT http://localhost:8000/events/1
+Content-Type: application/json
+
+{
+  "date": "2025-12-31T18:00:00",
+  "location": "Nueva Ubicación - Actualizada"
+}
+
+### ========================================
+### 🔔 TESTS DE NOTIFICACIONES
+### ========================================
+
+### ========================================
+### PARTE 1: SETUP - Crear datos de prueba
+### ========================================
+
+### 1. Crear usuario de prueba para notificaciones
+POST http://localhost:8000/auth/register
+Content-Type: application/json
+
+{
+  "username": "usernotif",
+  "email": "usernotif@example.com",
+  "full_name": "Usuario Notificaciones",
+  "password": "password123",
+  "role": "participant"
+}
+
+### 2. Crear evento PRÓXIMO (para recordatorio - mañana)
+POST http://localhost:8000/events/
+Content-Type: application/json
+
+{
+  "title": "Evento Próximo - Recordatorio Test",
+  "description": "Evento para probar recordatorios de 24 horas",
+  "date": "2025-11-23T10:00:00",
+  "location": "Centro de Convenciones",
+  "max_participants": 100,
+  "organizer_id": 1
+}
+
+### 3. Crear evento en 1 semana (para cambios)
+POST http://localhost:8000/events/
+Content-Type: application/json
+
+{
+  "title": "Evento Próximo - Test de Cambios",
+  "description": "Evento para probar notificaciones de cambios",
+  "date": "2025-11-29T15:00:00",
+  "location": "Ubicación Original",
+  "max_participants": 50,
+  "organizer_id": 1
+}
+
+### 4. Usuario se registra al evento del recordatorio (usar ID del paso 2)
+POST http://localhost:8000/events/attend
+Content-Type: application/json
+
+{
+  "user_id": 7,
+  "event_id": 11
+}
+
+### 5. Usuario se registra al evento de cambios (usar ID del paso 3)
+POST http://localhost:8000/events/attend
+Content-Type: application/json
+
+{
+  "user_id": 7,
+  "event_id": 12
+}
+
+### 6. Más usuarios se registran para mejor prueba
+POST http://localhost:8000/events/attend
+Content-Type: application/json
+
+{
+  "user_id": 2,
+  "event_id": 11
+}
+
+### ========================================
+### PARTE 2: TESTS DE RECORDATORIOS
+### ========================================
+
+### 7. 📱 Obtener notificaciones del usuario (incluye recordatorios)
+# Debe mostrar el evento próximo como recordatorio
+GET http://localhost:8000/social/notifications/user/7
+Accept: application/json
+
+### 8. 📱 Obtener notificaciones de otro usuario (juan)
+GET http://localhost:8000/social/notifications/user/2
+Accept: application/json
+
+### 9. 🔔 Obtener TODOS los eventos que necesitan recordatorio (Sistema)
+# Este endpoint es útil para un sistema automático de envío de emails/push
+GET http://localhost:8000/social/notifications/reminders
+Accept: application/json
+
+### ========================================
+### PARTE 3: TESTS DE CAMBIOS EN EVENTOS
+### ========================================
+
+### 10. 📝 Actualizar SOLO LA FECHA del evento (debe generar notificación)
+PUT http://localhost:8000/events/12
+Content-Type: application/json
+
+{
+  "date": "2025-11-30T18:00:00"
+}
+
+### 11. 📍 Actualizar SOLO LA UBICACIÓN del evento (debe generar notificación)
+PUT http://localhost:8000/events/12
+Content-Type: application/json
+
+{
+  "location": "Nueva Ubicación - Auditorio Central"
+}
+
+### 12. 🔄 Actualizar FECHA Y UBICACIÓN juntos (debe detectar ambos cambios)
+PUT http://localhost:8000/events/12
+Content-Type: application/json
+
+{
+  "date": "2025-12-01T16:00:00",
+  "location": "Ubicación Final - Hotel Convention"
+}
+
+### 13. ✏️ Actualizar solo TÍTULO (NO debe generar notificación de cambio crítico)
+PUT http://localhost:8000/events/12
+Content-Type: application/json
+
+{
+  "title": "Evento Próximo - Título Actualizado"
+}
+
+### 14. 📋 Actualizar DESCRIPCIÓN y MAX_PARTICIPANTS (NO son cambios críticos)
+PUT http://localhost:8000/events/12
+Content-Type: application/json
+
+{
+  "description": "Descripción actualizada con más detalles",
+  "max_participants": 80
+}
+
+### ========================================
+### PARTE 4: VERIFICACIÓN POST-CAMBIOS
+### ========================================
+
+### 15. 🔍 Ver notificaciones del usuario después de cambios
+# Debe incluir información sobre los cambios realizados
+GET http://localhost:8000/social/notifications/user/7
+Accept: application/json
+
+### 16. 📊 Ver detalles del evento modificado
+GET http://localhost:8000/events/12
+Accept: application/json
+
+### 17. 👥 Ver quiénes fueron afectados por los cambios
+GET http://localhost:8000/events/12/attendees
+Accept: application/json
+
+### ========================================
+### PARTE 5: TESTS CON DATOS DEL SEED
+### ========================================
+
+### 18. 📱 Notificaciones de Juan Pérez (user_id: 2)
+# Juan tiene varios eventos registrados en el seed
+GET http://localhost:8000/social/notifications/user/2
+Accept: application/json
+
+### 19. 📱 Notificaciones del Admin (user_id: 1)
+GET http://localhost:8000/social/notifications/user/1
+Accept: application/json
+
+### 20. 🔄 Modificar evento del seed que tiene asistentes
+# Conferencia de Tecnología 2025 (event_id: 1) tiene varios asistentes
+PUT http://localhost:8000/events/1
+Content-Type: application/json
+
+{
+  "date": "2025-12-28T09:00:00",
+  "location": "Nuevo Centro de Convenciones - Sede Principal"
+}
+
+### 21. 🔍 Ver notificaciones después del cambio masivo
+GET http://localhost:8000/social/notifications/user/2
+Accept: application/json
+
+### ========================================
+### PARTE 6: TESTS DE EDGE CASES
+### ========================================
+
+### 22. ❌ Usuario sin eventos registrados (no debe tener notificaciones)
+GET http://localhost:8000/social/notifications/user/5
+Accept: application/json
+
+### 23. 🔄 Actualizar evento sin cambiar fecha ni ubicación
+PUT http://localhost:8000/events/1
+Content-Type: application/json
+
+{
+  "title": "Conferencia de Tecnología 2025 - Solo título cambiado"
+}
+
+### 24. 📅 Actualizar fecha al mismo valor (no debe detectar cambio)
+# Primero obtener la fecha actual del evento
+GET http://localhost:8000/events/1
+Accept: application/json
+
+# Luego actualizar con la misma fecha (ajustar según respuesta anterior)
+PUT http://localhost:8000/events/1
+Content-Type: application/json
+
+{
+  "date": "2025-12-28T09:00:00"
+}
+
+### ========================================
+### PARTE 7: FLUJO COMPLETO DE NOTIFICACIÓN
+### ========================================
+
+### 25. FLUJO PASO 1: Crear evento para mañana
+POST http://localhost:8000/events/
+Content-Type: application/json
+
+{
+  "title": "Workshop Urgente - Mañana",
+  "description": "Workshop programado para mañana",
+  "date": "2025-11-23T14:00:00",
+  "location": "Sala de Conferencias A",
+  "max_participants": 30,
+  "organizer_id": 1
+}
+
+### 26. FLUJO PASO 2: Registrar múltiples usuarios
+POST http://localhost:8000/events/attend
+Content-Type: application/json
+
+{
+  "user_id": 2,
+  "event_id": 13
+}
+
+###
+POST http://localhost:8000/events/attend
+Content-Type: application/json
+
+{
+  "user_id": 4,
+  "event_id": 13
+}
+
+###
+POST http://localhost:8000/events/attend
+Content-Type: application/json
+
+{
+  "user_id": 6,
+  "event_id": 13
+}
+
+### 27. FLUJO PASO 3: Ver recordatorios del sistema
+GET http://localhost:8000/social/notifications/reminders
+Accept: application/json
+
+### 28. FLUJO PASO 4: Cambiar ubicación de último momento
+PUT http://localhost:8000/events/13
+Content-Type: application/json
+
+{
+  "location": "⚠️ CAMBIO URGENTE: Nueva Sala B - Edificio Principal"
+}
+
+### 29. FLUJO PASO 5: Cada usuario verifica sus notificaciones
+GET http://localhost:8000/social/notifications/user/2
+Accept: application/json
+
+###
+GET http://localhost:8000/social/notifications/user/4
+Accept: application/json
+
+###
+GET http://localhost:8000/social/notifications/user/6
+Accept: application/json
+
+### ========================================
+### 📝 RESUMEN DE TESTS
+### ========================================
+
+# Total de tests: 29
+
+# SETUP (6 tests):
+#   - Crear usuario de prueba
+#   - Crear eventos próximos
+#   - Registrar asistencias
+
+# RECORDATORIOS (3 tests):
+#   - Notificaciones individuales
+#   - Recordatorios del sistema
+
+# CAMBIOS EN EVENTOS (5 tests):
+#   - Cambio de fecha
+#   - Cambio de ubicación
+#   - Cambios combinados
+#   - Cambios no críticos
+
+# VERIFICACIÓN (3 tests):
+#   - Post-cambios
+#   - Detalles del evento
+#   - Usuarios afectados
+
+# DATOS DEL SEED (4 tests):
+#   - Notificaciones de usuarios existentes
+#   - Cambios masivos
+
+# EDGE CASES (3 tests):
+#   - Usuario sin eventos
+#   - Sin cambios críticos
+#   - Mismos valores
+
+# FLUJO COMPLETO (5 tests):
+#   - Crear → Registrar → Notificar → Cambiar → Verificar
+
+### ========================================
+### 📊 RESULTADOS ESPERADOS
+### ========================================
+
+# ✅ Recordatorios:
+# - Eventos en próximas 24 horas → notification_type: "reminder"
+# - Eventos futuros → notification_type: "upcoming"
+# - Mensaje específico con fecha/hora/ubicación
+
+# ✅ Cambios:
+# - Cambio de fecha → "changes_detected": true
+# - Cambio de ubicación → "changes_detected": true
+# - Lista de usuarios afectados
+# - Mensaje de notificación generado
+
+# ✅ Sin cambios críticos:
+# - Cambio de título/descripción → "changes_detected": false
+# - No genera alertas a usuarios
+
+### ========================================
+### 🔧 INSTRUCCIONES DE USO
+### ========================================
+
+# 1. Ejecutar tests en orden (importante para SETUP)
+
+# 2. AJUSTAR IDs según tu base de datos:
+#    - user_id: depende de cuántos usuarios has creado
+#    - event_id: depende de cuántos eventos existen
+
+# 3. Para tests de recordatorio, ajustar la fecha:
+#    - Usar fecha de MAÑANA para que aparezca en recordatorios
+#    - Formato: "2025-11-23T10:00:00" (ajustar día actual +1)
+
+### ========================================
