@@ -10,7 +10,7 @@ class DatabaseConnection:
     def get_connection(self):
         try:
             self.connection = mysql.connector.connect(
-                host="localhost",
+                host="postgresql://root:G5TWKXVdoy2HI1KxWCnEQY6lNPVz7tR4@dpg-d4h49humcj7s73bq3b3g-a/event_management_8fim",
                 user="root",
                 password="",
                 database="event_management"
